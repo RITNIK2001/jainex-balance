@@ -1,0 +1,85 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#111827"><meta name="apple-mobile-web-app-capable" content="yes"><title>JAINEX GRANITES – Customer Balance</title><link rel="manifest" href="manifest.json"><style>:root{--bg:#f3f4f6;--card:#fff;--ink:#111827;--muted:#667085;--line:#d0d5dd;--danger:#b42318;--ok:#027a48}*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:var(--ink)}header{background:#080b12;color:#fff;padding:34px 22px 28px}header h1{margin:0;font-size:30px}header p{margin:8px 0 0;color:#a7adb8;font-size:17px}main{max-width:850px;margin:auto;padding:22px 16px 40px}button,input{font:inherit}button{border:0;border-radius:18px;padding:15px 18px;font-weight:700}.primary{background:#111827;color:#fff}.secondary{background:#e5e7eb;color:#111827}.danger{background:#fee4e2;color:#b42318}.scan{width:100%;font-size:21px;padding:21px;margin-bottom:18px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}.stat,.card{background:var(--card);border-radius:24px;padding:20px;box-shadow:0 2px 12px #0000000d}.stat span{display:block;color:var(--muted);font-size:16px}.stat strong{font-size:28px;display:block;margin-top:6px}.search{width:100%;padding:16px;border:1px solid var(--line);border-radius:16px;background:#fff;margin:0 0 15px}.customer{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:17px 0;border-bottom:1px solid #eaecf0}.customer h3{margin:0 0 5px;font-size:18px}.customer p{margin:0;color:var(--muted);font-size:14px}.amount{font-weight:800;white-space:nowrap}.zero{color:var(--ok)}.empty{text-align:center;color:var(--muted);padding:28px 10px}.modal{position:fixed;inset:0;background:#0008;display:none;align-items:flex-end;z-index:10}.modal.open{display:flex}.sheet{background:#fff;width:100%;max-height:94vh;overflow:auto;border-radius:28px 28px 0 0;padding:24px 20px calc(26px + env(safe-area-inset-bottom))}.sheet h2{margin:0 0 16px;font-size:27px}.close{float:right;background:#e5e7eb;color:#0670f7;padding:12px 18px}label{display:block;font-weight:700;color:#344054;margin:18px 0 8px}input[type=text],input[type=tel],input[type=number],input[type=date]{width:100%;padding:16px;border:2px solid #d0d5dd;border-radius:16px;background:#fff}.hint{background:#fff7ed;border-radius:16px;padding:15px;margin:10px 0 18px;color:#344054}.actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}.actions button{font-size:18px}.cameraBox{border:2px dashed #98a2b3;border-radius:18px;padding:18px;text-align:center;margin:10px 0 18px}.cameraBox input{width:100%;margin-top:12px}.preview{max-width:100%;max-height:260px;border-radius:15px;display:none;margin:12px auto}.customerHead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.balanceBig{font-size:30px;font-weight:800;margin:8px 0 18px}.slip{border-top:1px solid #eaecf0;padding:15px 0}.slip img{width:100%;max-height:300px;object-fit:contain;background:#f2f4f7;border-radius:14px}.slip small{color:var(--muted)}.row{display:flex;gap:10px;flex-wrap:wrap}.row button{flex:1}.phone{color:#0670f7;text-decoration:none;font-weight:700}.notice{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.45}@media(min-width:650px){.sheet{width:650px;margin:auto;border-radius:28px;margin-bottom:3vh}.modal{align-items:center}}</style><script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script></head><body><header><h1>JAINEX GRANITES</h1><p>Customer Balance • Stored on this iPhone</p></header><main><button class="primary scan" onclick="openAdd()">📷 SCAN / ADD SLIP</button><div class="stats"><div class="stat"><span>Customers</span><strong id="customerCount">0</strong></div><div class="stat"><span>Outstanding</span><strong id="totalBalance">₹0</strong></div></div><input id="search" class="search" placeholder="🔎 Search customer name or mobile" oninput="renderCustomers()"><section class="card"><h2 style="margin:0 0 8px">Customers</h2><div id="customerList"></div></section></main><div id="addModal" class="modal" onclick="if(event.target===this)closeModal('addModal')"><div class="sheet"><button class="close" onclick="closeModal('addModal')">Close</button><h2>Add slip</h2><div class="hint">Take a clear photo of the handwritten slip. The photo is compressed and saved only on this iPhone. Check the details before saving.</div><div class="cameraBox"><b>📷 Add slip photo</b><div style="font-size:14px;color:#667085;margin-top:6px">Choose a photo from Photos or take a new photo.</div><input id="slipPhoto" type="file" accept="image/*" onchange="photoSelected(event)"><img id="photoPreview" class="preview" alt="Slip preview"><button type="button" class="secondary" style="width:100%;margin-top:8px" onclick="extractSlip()">🔍 READ SLIP AGAIN</button><div id="ocrStatus" class="notice" style="display:none"></div></div><label>Customer name</label><input id="name" type="text" autocomplete="name" placeholder="Enter customer name"><label>Mobile number</label><input id="mobile" type="tel" inputmode="numeric" autocomplete="tel" maxlength="10" placeholder="10 digit mobile number"><label>Purchase / balance amount</label><input id="amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="₹ amount"><label>Date</label><input id="date" type="date"><div class="actions"><button class="primary" onclick="saveSlip()">SAVE</button><button class="secondary" onclick="closeModal('addModal')">Cancel</button></div><p class="notice">Customer records and slip photos are stored in this browser's local IndexedDB. They are not written into the GitHub repository.</p></div></div><div id="detailModal" class="modal" onclick="if(event.target===this)closeModal('detailModal')"><div class="sheet"><button class="close" onclick="closeModal('detailModal')">Close</button><div id="detailContent"></div></div></div><script>
+const DB='jainex_customer_balance_v2';let db,photoBlob=null;const $=id=>document.getElementById(id);const money=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:2});const today=()=>new Date().toISOString().slice(0,10);const norm=s=>String(s||'').replace(/\D/g,'').slice(-10);const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+function openDB(){return new Promise((res,rej)=>{let r=indexedDB.open(DB,1);r.onupgradeneeded=e=>{let d=e.target.result;if(!d.objectStoreNames.contains('customers')){let s=d.createObjectStore('customers',{keyPath:'id'});s.createIndex('mobile','mobile');}if(!d.objectStoreNames.contains('slips')){let s=d.createObjectStore('slips',{keyPath:'id'});s.createIndex('customerId','customerId');}};r.onsuccess=e=>{db=e.target.result;res()};r.onerror=()=>rej(r.error)})}function all(store){return new Promise((res,rej)=>{let r=db.transaction(store).objectStore(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}function put(store,o){return new Promise((res,rej)=>{let r=db.transaction(store,'readwrite').objectStore(store).put(o);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}function remove(store,k){return new Promise((res,rej)=>{let r=db.transaction(store,'readwrite').objectStore(store).delete(k);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function compress(file){return new Promise((res,rej)=>{let im=new Image(),u=URL.createObjectURL(file);im.onload=()=>{let sc=Math.min(1,1500/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=im.naturalWidth*sc;c.height=im.naturalHeight*sc;c.getContext('2d').drawImage(im,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(u);b?res(b):rej()},'image/jpeg',.62)};im.onerror=()=>rej();im.src=u})}
+function setOCRStatus(msg){$('ocrStatus').textContent=msg;$('ocrStatus').style.display='block'}
+function cleanOCR(s){return String(s||'').replace(/\r/g,'').replace(/[|]/g,'I').replace(/[“”]/g,'"').trim()}
+function parseOCR(txt){
+  txt=cleanOCR(txt);
+  let mobile='';
+  let m=txt.match(/(?:mob(?:ile)?|ph(?:one)?|contact|cell)\D{0,20}(\d[\d\s\-]{8,13}\d)/i);
+  if(m) mobile=norm(m[1]);
+  if(mobile.length!==10){
+    let nums=[...txt.matchAll(/(?:\+91[\s\-]?)?(\d[\d\s\-]{8,13}\d)/g)].map(x=>norm(x[1])).filter(x=>x.length===10);
+    mobile=nums[0]||'';
+  }
+
+  let balance='';
+  let bm=txt.match(/(?:balance|bal(?:ance)?|outstanding|due)\D{0,15}(?:₹|rs\.?|inr)?\s*([0-9][0-9,\s]{2,9})/i);
+  if(bm) balance=bm[1].replace(/\D/g,'');
+  if(!balance){
+    let lines=txt.split('\n').map(x=>x.trim()).filter(Boolean);
+    for(let i=0;i<lines.length;i++){
+      if(/balance|outstanding|due/i.test(lines[i])){
+        let n=lines[i].match(/(?:₹|rs\.?|inr)?\s*([0-9][0-9,\s]{2,9})/i);
+        if(n){balance=n[1].replace(/\D/g,'');break}
+        if(lines[i+1]){let n2=lines[i+1].match(/([0-9][0-9,\s]{2,9})/);if(n2){balance=n2[1].replace(/\D/g,'');break}}
+      }
+    }
+  }
+
+  let name='';
+  let nm=txt.match(/(?:^|\n)\s*(?:to|customer|name)\s*[:\-]?\s*([A-Za-z][A-Za-z .&']{2,40})/i);
+  if(nm) name=nm[1].trim().replace(/\s+/g,' ');
+  if(!name){
+    let lines=txt.split('\n').map(x=>x.trim()).filter(Boolean);
+    let idx=lines.findIndex(x=>/^to\b/i.test(x));
+    if(idx>=0 && lines[idx].replace(/^to\b/i,'').trim()) name=lines[idx].replace(/^to\b/i,'').trim();
+  }
+  return {name,mobile,balance,raw:txt};
+}
+async function extractSlip(){
+  if(!photoBlob){setOCRStatus('Please add a slip photo first.');return}
+  if(typeof Tesseract==='undefined'){setOCRStatus('OCR library could not load. Please check your internet connection and try again.');return}
+  setOCRStatus('🔍 Reading the slip… handwritten slips can take a little time.');
+  try{
+    const result=await Tesseract.recognize(photoBlob,'eng',{
+      logger:d=>{
+        if(d.status==='recognizing text'&&typeof d.progress==='number') setOCRStatus('🔍 Reading the slip… '+Math.round(d.progress*100)+'%');
+      }
+    });
+    const x=parseOCR(result.data.text);
+    if(x.name) $('name').value=x.name;
+    if(x.mobile) $('mobile').value=x.mobile;
+    if(x.balance) $('amount').value=x.balance;
+    let found=[];
+    if(x.name) found.push('name');
+    if(x.mobile) found.push('mobile');
+    if(x.balance) found.push('balance');
+    if(found.length) setOCRStatus('✅ Found: '+found.join(', ')+'. Please check the fields before saving.');
+    else setOCRStatus('⚠️ I could not read the details clearly. Please enter them manually and try “READ SLIP AGAIN” if needed.');
+    console.log('JAINEX OCR text:',result.data.text);
+  }catch(err){
+    console.error(err);
+    setOCRStatus('⚠️ OCR could not read this slip. Please enter the details manually.');
+  }
+}
+async function photoSelected(e){
+  if(!e.target.files[0])return;
+  try{
+    photoBlob=await compress(e.target.files[0]);
+    $('photoPreview').src=URL.createObjectURL(photoBlob);
+    $('photoPreview').style.display='block';
+    await extractSlip();
+  }catch(e){alert('Could not process the photo. Please try again.')}
+}
+function openAdd(){photoBlob=null;$('name').value='';$('mobile').value='';$('amount').value='';$('date').value=today();$('slipPhoto').value='';$('photoPreview').style.display='none';$('ocrStatus').style.display='none';$('ocrStatus').textContent='';$('addModal').classList.add('open')}function closeModal(id){$(id).classList.remove('open')}
+async function saveSlip(){let name=$('name').value.trim(),mobile=norm($('mobile').value),amount=Number($('amount').value),date=$('date').value||today();if(!name)return alert('Please enter the customer name.');if(mobile.length!==10)return alert('Please enter a valid 10 digit mobile number.');if(!Number.isFinite(amount)||amount<0)return alert('Please enter the amount.');let cs=await all('customers'),c=cs.find(x=>x.mobile===mobile);if(c){if(!confirm('This mobile number already belongs to '+c.name+'. Add this slip to that customer?'))return;c.balance=Number(c.balance)+amount;c.name=name||c.name;c.updatedAt=Date.now()}else c={id:crypto.randomUUID(),name,mobile,balance:amount,createdAt:Date.now(),updatedAt:Date.now()};await put('customers',c);await put('slips',{id:crypto.randomUUID(),customerId:c.id,amount,date,createdAt:Date.now(),photo:photoBlob||null});closeModal('addModal');await renderCustomers();alert('Saved successfully. Current balance: '+money(c.balance))}
+async function renderCustomers(){let cs=await all('customers'),q=$('search').value.trim().toLowerCase();$('customerCount').textContent=cs.length;$('totalBalance').textContent=money(cs.reduce((a,c)=>a+Number(c.balance||0),0));let f=cs.filter(c=>!q||c.name.toLowerCase().includes(q)||c.mobile.includes(q)).sort((a,b)=>b.updatedAt-a.updatedAt);$('customerList').innerHTML=f.length?f.map(c=>`<div class="customer" onclick="showCustomer('${c.id}')"><div><h3>${esc(c.name)}</h3><p><a class="phone" href="tel:${esc(c.mobile)}" onclick="event.stopPropagation()">📞 ${esc(c.mobile)}</a></p></div><div class="amount ${Number(c.balance)===0?'zero':''}">${money(c.balance)}</div></div>`).join(''):`<div class="empty">${cs.length?'No matching customer found.':'No customers yet. Tap “SCAN / ADD SLIP” to add the first slip.'}</div>`}
+async function showCustomer(id){let c=(await all('customers')).find(x=>x.id===id);if(!c)return;let ss=(await all('slips')).filter(s=>s.customerId===id).sort((a,b)=>b.createdAt-a.createdAt);let h=`<h2>${esc(c.name)}</h2><a class="phone" href="tel:${esc(c.mobile)}">📞 ${esc(c.mobile)}</a><div class="balanceBig">Current balance: ${money(c.balance)}</div><div class="row"><button class="primary" onclick="addFor('${c.id}')">➕ Add slip</button><button class="secondary" onclick="payment('${c.id}')">💵 Record payment</button></div><h3 style="margin-top:26px">Slip history</h3>`;for(let s of ss)h+=`<div class="slip"><b>${money(s.amount)}</b> <small>• ${esc(s.date)}</small>${s.photo?`<img src="${URL.createObjectURL(s.photo)}" alt="Slip">`:''}<div class="row" style="margin-top:9px"><button class="danger" onclick="deleteSlip('${s.id}')">Delete slip</button></div></div>`;if(Number(c.balance)===0)h+=`<button class="danger" style="width:100%;margin-top:18px" onclick="deleteCustomer('${c.id}')">🗑️ Delete customer & all slips</button>`;else h+=`<p class="notice">Customer deletion is available only when the balance is ₹0.</p>`;$('detailContent').innerHTML=h;$('detailModal').classList.add('open')}
+async function addFor(id){let c=(await all('customers')).find(x=>x.id===id);closeModal('detailModal');openAdd();$('name').value=c.name;$('mobile').value=c.mobile}
+async function payment(id){let c=(await all('customers')).find(x=>x.id===id),p=prompt('Payment received from '+c.name+'\nCurrent balance: '+money(c.balance)+'\n\nEnter payment amount:');if(p===null)return;let n=Number(p);if(!Number.isFinite(n)||n<=0||n>Number(c.balance))return alert('Enter a valid payment amount not greater than the balance.');c.balance-=n;c.updatedAt=Date.now();await put('customers',c);await showCustomer(id);renderCustomers()}
+async function deleteSlip(id){if(!confirm('Delete this slip? Its amount will be removed from the balance.'))return;let s=(await all('slips')).find(x=>x.id===id),c=(await all('customers')).find(x=>x.id===s.customerId);c.balance=Math.max(0,Number(c.balance)-Number(s.amount));c.updatedAt=Date.now();await put('customers',c);await remove('slips',id);await showCustomer(c.id);renderCustomers()}
+async function deleteCustomer(id){let c=(await all('customers')).find(x=>x.id===id);if(!c||Number(c.balance)!==0)return;if(!confirm('Delete '+c.name+' and ALL stored slips/photos? This cannot be undone.'))return;for(let s of (await all('slips')).filter(x=>x.customerId===id))await remove('slips',s.id);await remove('customers',id);closeModal('detailModal');renderCustomers()}
+$('date').value=today();openDB().then(renderCustomers).catch(()=>alert('Local storage could not be opened. Please use Safari.'));if('serviceWorker'in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script></body></html>
