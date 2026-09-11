@@ -66,7 +66,7 @@ async function extractSlip(){
     console.log('JAINEX OCR text:',x.raw);
   }catch(err){console.error(err);setOCRStatus('⚠️ OCR could not read this slip. Please try a clearer, straight photo.')}
 }
-async function photoSelected(e){
+async async function photoSelected(e){
   if(!e.target.files[0])return;
   try{photoBlob=await compress(e.target.files[0]);$('photoPreview').src=URL.createObjectURL(photoBlob);$('photoPreview').style.display='block';await extractSlip()}
   catch(e){alert('Could not process the photo. Please try again.')}
