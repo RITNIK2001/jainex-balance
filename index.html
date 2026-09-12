@@ -65,7 +65,7 @@ function loadImage(blob){return new Promise((res,rej)=>{let im=new Image(),u=URL
 async function makeOCRBlob(blob,rx,ry,rw,rh,mode='normal'){
   let im=await loadImage(blob),x=Math.round(im.naturalWidth*rx),y=Math.round(im.naturalHeight*ry),w=Math.round(im.naturalWidth*rw),h=Math.round(im.naturalHeight*rh);
   x=Math.max(0,Math.min(x,im.naturalWidth-1));y=Math.max(0,Math.min(y,im.naturalHeight-1));w=Math.max(1,Math.min(w,im.naturalWidth-x));h=Math.max(1,Math.min(h,im.naturalHeight-y));
-  let scale=Math.min(2.5,2200/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));let ctx=c.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=true;ctx.drawImage(im,x,y,w,h,0,0,c.width,c.height);
+  let scale=Math.min(4,3200/Math.max(w,h)),c=document.createElement('canvas');c.width=Math.max(1,Math.round(w*scale));c.height=Math.max(1,Math.round(h*scale));let ctx=c.getContext('2d',{willReadFrequently:true});ctx.imageSmoothingEnabled=true;ctx.drawImage(im,x,y,w,h,0,0,c.width,c.height);
   let data=ctx.getImageData(0,0,c.width,c.height),p=data.data;
   for(let i=0;i<p.length;i+=4){let g=.299*p[i]+.587*p[i+1]+.114*p[i+2];if(mode==='threshold')g=g>165?255:0;else if(mode==='soft')g=Math.max(0,Math.min(255,(g-128)*1.8+128));else g=Math.max(0,Math.min(255,(g-128)*1.35+128));p[i]=p[i+1]=p[i+2]=g}
   ctx.putImageData(data,0,0);return new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(),'image/jpeg',.9))
@@ -82,41 +82,38 @@ async function extractSlip(){
   try{
     let nameResults=[],mobileResults=[],balanceResults=[],topResults=[];
 
-    // These slips have a fixed layout:
-    // Customer name is written AFTER the printed "To,".
-    // Mobile is written AFTER the printed "Mob.".
-    // Final balance is written ON THE SAME ROW as the handwritten word "Balance".
+    // JAINEX SLIP TEMPLATE: the handwritten fields are in fixed places.
+    // Name  = immediately after printed "To,"
+    // Mobile = immediately after printed "Mob."
+    // Balance = number written on the same row as handwritten "Balance"
 
-    // 1) NAME: include the printed "To" anchor in the crop so OCR can understand
-    // where the handwritten name starts. Several line modes are tried because
-    // handwriting recognition can vary between photos.
+    // NAME — tightly crop only the To/customer line.
     setOCRStatus('🔍 Reading customer name after “To”…');
-    const nameBox=[.05,.055,.60,.095];
+    const nameBox=[.07,.045,.47,.065];
     nameResults.push(await ocrOne(await makeOCRBlob(photoBlob,...nameBox,'normal'),'normal',7,'Reading customer name…'));
     nameResults.push(await ocrOne(await makeOCRBlob(photoBlob,...nameBox,'soft'),'soft',13,'Reading customer name…'));
-    nameResults.push(await ocrOne(await makeOCRBlob(photoBlob,...nameBox,'threshold'),'threshold',6,'Reading customer name…'));
+    nameResults.push(await ocrOne(await makeOCRBlob(photoBlob,.10,.045,.40,.060,'threshold'),'threshold',7,'Reading customer name…'));
 
-    // Also read the complete header row once. This gives the parser both printed
-    // anchors (To / Mob) and the handwritten values in one recognition pass.
-    topResults.push(await ocrOne(await makeOCRBlob(photoBlob,.04,.045,.93,.115,'normal'),'normal',6,'Reading slip header…'));
-    topResults.push(await ocrOne(await makeOCRBlob(photoBlob,.04,.045,.93,.115,'soft'),'soft',11,'Reading slip header…'));
+    // HEADER — backup only; it contains both printed anchors.
+    topResults.push(await ocrOne(await makeOCRBlob(photoBlob,.04,.035,.94,.085,'normal'),'normal',6,'Reading slip header…'));
+    topResults.push(await ocrOne(await makeOCRBlob(photoBlob,.04,.035,.94,.085,'soft'),'soft',11,'Reading slip header…'));
 
-    // 2) MOBILE: digits-only crop immediately after printed "Mob.".
+    // MOBILE — tightly crop the handwritten digits after Mob.
     setOCRStatus('🔢 Reading mobile after “Mob.”…');
-    const mobBox=[.64,.065,.34,.075];
+    const mobBox=[.62,.045,.34,.065];
     mobileResults.push(await ocrOne(await makeOCRBlob(photoBlob,...mobBox,'normal'),'normal',7,'Reading mobile number…','0123456789'));
     mobileResults.push(await ocrOne(await makeOCRBlob(photoBlob,...mobBox,'soft'),'soft',13,'Reading mobile number…','0123456789'));
-    mobileResults.push(await ocrOne(await makeOCRBlob(photoBlob,.58,.045,.40,.115,'threshold'),'threshold',6,'Reading mobile number…','0123456789'));
+    mobileResults.push(await ocrOne(await makeOCRBlob(photoBlob,.66,.050,.29,.055,'threshold'),'threshold',7,'Reading mobile number…','0123456789'));
 
-    // 3) FINAL BALANCE: fixed row containing the handwritten word "Balance".
-    // On the user's sample this row is around 58–63% down the image, NOT near
-    // the bottom of the page. The crop includes the word "Balance" as an anchor
-    // and the amount to its right.
+    // BALANCE — IMPORTANT: on this template the Balance row is around 26–33%
+    // down the full photo. The old V3 crop was around 56%, which missed the row.
     setOCRStatus('💰 Reading amount beside “Balance”…');
-    const balBox=[.55,.555,.42,.075];
+    const balBox=[.52,.255,.44,.070];
     balanceResults.push(await ocrOne(await makeOCRBlob(photoBlob,...balBox,'normal'),'normal',7,'Reading final balance…'));
     balanceResults.push(await ocrOne(await makeOCRBlob(photoBlob,...balBox,'soft'),'soft',13,'Reading final balance…'));
-    balanceResults.push(await ocrOne(await makeOCRBlob(photoBlob,.50,.535,.47,.115,'threshold'),'threshold',6,'Reading final balance…'));
+    balanceResults.push(await ocrOne(await makeOCRBlob(photoBlob,.57,.250,.39,.060,'threshold'),'threshold',7,'Reading final balance…','0123456789'));
+    // A second exact amount-only crop, excluding the word Balance and table borders.
+    balanceResults.push(await ocrOne(await makeOCRBlob(photoBlob,.72,.275,.22,.045,'normal'),'normal',7,'Reading balance amount…','0123456789'));
 
     let name=chooseAnchoredName([...nameResults,...topResults]);
     let mobile=chooseAnchoredMobile([...mobileResults,...topResults]);
@@ -128,7 +125,7 @@ async function extractSlip(){
 
     let found=[];if(name)found.push('name');if(mobile)found.push('mobile');if(balance)found.push('final balance');
     if(found.length)setOCRStatus('✅ Found: '+found.join(', ')+'. Please check the fields before saving.');
-    else setOCRStatus('⚠️ I could not read the details clearly. Try a clearer, straight photo and tap “READ SLIP AGAIN”.');
+    else setOCRStatus('⚠️ I could not read the details clearly. Try a clear, straight photo and tap “READ SLIP AGAIN”.');
     console.log('JAINEX OCR text:',[...nameResults,...mobileResults,...balanceResults,...topResults].join('\n---\n'));
   }catch(err){console.error(err);setOCRStatus('⚠️ OCR could not read this slip. Please try a clearer, straight photo.')}
 }
